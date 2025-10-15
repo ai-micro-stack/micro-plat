@@ -52,6 +52,12 @@ function PlatBuilder() {
   const [computeTypes, setComputeTypes] = useState<moduleType[]>([]);
   const [storageTypes, setStorageTypes] = useState<moduleType[]>([]);
 
+  const supportedServers = [
+    { name: "(None)", notfor: [] },
+    { name: "Ollama", notfor: ["vectordb"] },
+  ];
+  const [serverOpts, setServerOpts] = useState(supportedServers);
+
   const [spinning, setSpinning] = useState(false);
   const [errMsg, setErrMsg] = useState<string[]>([]);
   const [showAlert, setShowAlert] = useState(false);
@@ -148,6 +154,7 @@ function PlatBuilder() {
       );
       setClusterTuples(availableClusters.Clusters);
       setCurPlat(appPlats[platId ?? 0]);
+      setServerOpts(supportedServers);
     }
   }, [appPlats, platId]);
 
@@ -373,13 +380,13 @@ function PlatBuilder() {
           .then(() => {
             handleTerminalShow();
           })
-          // .then(() => {
-          //   if (!curCluster.build_auto_lock) return;
-          //   axiosInstance.post("/platplan/update", {
-          //     ...curCluster,
-          //     is_locked: true,
-          //   });
-          // })
+          .then(() => {
+            if (!curPlat.build_auto_lock) return;
+            axiosInstance.post("/platplan/update", {
+              ...curPlat,
+              is_locked: true,
+            });
+          })
           .catch((error) => {
             chgBntStatus("buld");
             setErrMsg([
@@ -539,7 +546,7 @@ function PlatBuilder() {
         </Form>
       </div>
       <Modal
-        size="lg"
+        size="xl"
         backdrop="static"
         keyboard={false}
         show={showModal}
@@ -564,6 +571,34 @@ function PlatBuilder() {
               <h5>Embedding Cluster:</h5>
               <br />
               <Row>
+                <Col>
+                  <Form.Group className="mb-2 d-flex">
+                    <Form.Label className=" col-sm-3 text-center">
+                      Model Server:
+                    </Form.Label>
+                    <Form.Select
+                      value={curPlat?.embedding_model_server}
+                      onChange={(e) => {
+                        setCurPlat({
+                          ...curPlat,
+                          embedding_model_server: e.target.value,
+                        });
+                      }}
+                    >
+                      {serverOpts.map((modelServer) => {
+                        return (
+                          <option
+                            key={modelServer.name}
+                            value={modelServer.name}
+                            disabled={modelServer.notfor.includes("embedding")}
+                          >
+                            {modelServer.name}
+                          </option>
+                        );
+                      })}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
                 <Col>
                   <Form.Group className="mb-2 d-flex">
                     <Form.Label className=" col-sm-3 text-center">
@@ -592,6 +627,34 @@ function PlatBuilder() {
                 <Col>
                   <Form.Group className="mb-2 d-flex">
                     <Form.Label className=" col-sm-3 text-center">
+                      Model Server:
+                    </Form.Label>
+                    <Form.Select
+                      value={curPlat?.llm_model_server}
+                      onChange={(e) => {
+                        setCurPlat({
+                          ...curPlat,
+                          llm_model_server: e.target.value,
+                        });
+                      }}
+                    >
+                      {serverOpts.map((modelServer) => {
+                        return (
+                          <option
+                            key={modelServer.name}
+                            value={modelServer.name}
+                            disabled={modelServer.notfor.includes("iim")}
+                          >
+                            {modelServer.name}
+                          </option>
+                        );
+                      })}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group className="mb-2 d-flex">
+                    <Form.Label className=" col-sm-3 text-center">
                       Model Store:
                     </Form.Label>
                     <Form.Control
@@ -617,6 +680,34 @@ function PlatBuilder() {
                 <Col>
                   <Form.Group className="mb-2 d-flex">
                     <Form.Label className=" col-sm-3 text-center">
+                      Model Server:
+                    </Form.Label>
+                    <Form.Select
+                      value={curPlat?.vectordb_data_server}
+                      onChange={(e) => {
+                        setCurPlat({
+                          ...curPlat,
+                          vectordb_data_server: e.target.value,
+                        });
+                      }}
+                    >
+                      {serverOpts.map((modelServer) => {
+                        return (
+                          <option
+                            key={modelServer.name}
+                            value={modelServer.name}
+                            disabled={modelServer.notfor.includes("vectordb")}
+                          >
+                            {modelServer.name}
+                          </option>
+                        );
+                      })}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group className="mb-2 d-flex">
+                    <Form.Label className=" col-sm-3 text-center">
                       Data Store:
                     </Form.Label>
                     <Form.Control
@@ -627,6 +718,50 @@ function PlatBuilder() {
                         setCurPlat({
                           ...curPlat,
                           vectordb_data_store: e.target.value,
+                        });
+                      }}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </div>
+            <hr />
+            <div>
+              <h5>Change Control:</h5>
+              <br />
+              <Row>
+                <Col>
+                  <Form.Group className="mb-2 d-flex">
+                    <Form.Label className="col-sm-3 text-center">
+                      Lock Plat:
+                    </Form.Label>
+                    <Form.Check
+                      type="switch"
+                      id="cluster-lock-switch"
+                      // label="Lock this cluster"
+                      checked={curPlat?.is_locked}
+                      onChange={(e) => {
+                        setCurPlat({
+                          ...curPlat,
+                          is_locked: e.target.checked,
+                        });
+                      }}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group className="mb-2 d-flex">
+                    <Form.Label className="col-sm-3 text-center">
+                      Build Auto-lock:
+                    </Form.Label>
+                    <Form.Check
+                      type="switch"
+                      id="cluster-lock-switch"
+                      checked={curPlat?.build_auto_lock}
+                      onChange={(e) => {
+                        setCurPlat({
+                          ...curPlat,
+                          build_auto_lock: e.target.checked,
                         });
                       }}
                     />
@@ -839,13 +974,28 @@ function PlatBuilder() {
             Save Assignment
           </Button>
           <Button
+            variant={
+              bntStatus.buld || curPlat.is_locked ? "secondary" : "primary"
+            }
+            style={lstyle}
+            disabled={bntStatus.buld || curPlat.is_locked}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!bntStatus.buld) {
+                buildPlatform();
+              }
+            }}
+          >
+            Setup the Plat
+          </Button>
+          <Button
             variant={bntStatus.buld ? "secondary" : "primary"}
             style={lstyle}
             disabled={bntStatus.buld}
             onClick={(e) => {
               e.preventDefault();
               if (!bntStatus.buld) {
-                buildPlatform();
+                // buildPlatform();
               }
             }}
           >

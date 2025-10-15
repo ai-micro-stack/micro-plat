@@ -481,6 +481,23 @@ function PlatPlanner() {
                 }}
               />
             </Form.Group>
+            <Form.Group className="mb-2 d-flex">
+              <Form.Label className="col-sm-3 text-center">
+                Lock Cluster:
+              </Form.Label>
+              <Form.Check
+                type="switch"
+                id="cluster-lock-switch"
+                // label="Lock this cluster"
+                checked={curPlat?.is_locked}
+                onChange={(e) => {
+                  setCurPlat({
+                    ...curPlat,
+                    is_locked: e.target.checked,
+                  });
+                }}
+              />
+            </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -655,9 +672,11 @@ function PlatPlanner() {
       <div className="jumbotron">
         <Form>
           <Button
-            variant={bntStatus.save ? "secondary" : "primary"}
+            variant={
+              bntStatus.save || curPlat.is_locked ? "secondary" : "primary"
+            }
             style={lstyle}
-            disabled={bntStatus.save}
+            disabled={bntStatus.save || curPlat.is_locked}
             onClick={(e) => {
               e.preventDefault();
               if (!bntStatus.save) {

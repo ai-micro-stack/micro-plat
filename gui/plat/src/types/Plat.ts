@@ -10,7 +10,7 @@ export type NodeType = HostType & {
   storage_role?: number;
   balancer_node?: boolean;
   balancer_role: number;
-};  
+};
 
 export type ClusterTuple = ClusterType & {
   cluster_nodes: number;
@@ -20,7 +20,7 @@ export type ClusterTuple = ClusterType & {
   storage_nodes: number;
   cluster_status: string;
   nodeRef: React.ReactNode;
-}
+};
 
 export type PlatType = {
   readonly id: number;
@@ -28,10 +28,16 @@ export type PlatType = {
   plat_note: string;
   plat_type: number;
   plat_vip: string;
-  embedding_model_store: string;
-  llm_model_store: string;
-  vectordb_data_store: string;
   is_active: boolean;
+  is_locked?: boolean;
+  build_auto_lock?: boolean;
+  embedding_model_server: string;
+  embedding_model_store: string;
+  llm_model_server: string;
+  llm_model_store: string;
+  vectordb_data_server: string;
+  vectordb_data_store: string;
+
   readonly createdAt: Date;
   Clusters: ClusterTuple[];
 };
@@ -42,12 +48,17 @@ export const defaultPlat: PlatType = {
   plat_note: "_@_",
   plat_type: 0,
   plat_vip: "",
+  embedding_model_server: "",
   embedding_model_store: "",
+  llm_model_server: "",
   llm_model_store: "",
+  vectordb_data_server: "",
   vectordb_data_store: "",
   is_active: true,
+  is_locked: true,
+  build_auto_lock: true,
   createdAt: new Date(),
-  Clusters:[]
+  Clusters: [],
 };
 
 export const emptyPlat: PlatType = {
@@ -56,12 +67,17 @@ export const emptyPlat: PlatType = {
   plat_note: "",
   plat_type: 0,
   plat_vip: "",
-  embedding_model_store:"",
-  llm_model_store: "",
-  vectordb_data_store: "",
   is_active: true,
+  is_locked: false,
+  build_auto_lock: true,
+  embedding_model_server: "(None)",
+  embedding_model_store: "",
+  llm_model_server: "(None)",
+  llm_model_store: "",
+  vectordb_data_server: "(None)",
+  vectordb_data_store: "",
   createdAt: new Date(),
-  Clusters:[]
+  Clusters: [],
 };
 
 export type platModuleAreas = {
@@ -71,10 +87,16 @@ export type platModuleAreas = {
 };
 
 export const platEmptyAreas: platModuleAreas = {
-  embeddingModules: [{moduleName: "(None)", moduleRoles:defaultRoles, moduleStatus:0}],
-  vectordbModules: [{moduleName: "(None)", moduleRoles:defaultRoles, moduleStatus:0}],
-  llmModules: [{moduleName: "(None)", moduleRoles:defaultRoles, moduleStatus:0}],
-}
+  embeddingModules: [
+    { moduleName: "(None)", moduleRoles: defaultRoles, moduleStatus: 0 },
+  ],
+  vectordbModules: [
+    { moduleName: "(None)", moduleRoles: defaultRoles, moduleStatus: 0 },
+  ],
+  llmModules: [
+    { moduleName: "(None)", moduleRoles: defaultRoles, moduleStatus: 0 },
+  ],
+};
 
 export const platTypes = [
   { key: 0, plat_type_name: "-- select a type --" },
