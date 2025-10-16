@@ -321,9 +321,10 @@ function PlatBuilder() {
       });
   };
 
-  const buildPlatform = () => {
+  const buildPlatform = (target: string) => {
+    const notice = target ==="server" ? "build the AI platform" : "pull the AI models"
     const confirmBuild = window.confirm(
-      `You are about to build a AI platform with the current settings. Click OK to continue.`
+      `You are about to ${notice} with the current settings. Click OK to continue.`
     );
     if (!confirmBuild) return;
     chgBntStatus("none");
@@ -340,6 +341,7 @@ function PlatBuilder() {
         chgBntStatus("save");
         axiosInstance
           .post("/platbuild/build", {
+            Target: target,
             Plat: curPlat,
             Clusters: clusterTuples.map((c) => {
               return {
@@ -982,7 +984,7 @@ function PlatBuilder() {
             onClick={(e) => {
               e.preventDefault();
               if (!bntStatus.buld) {
-                buildPlatform();
+                buildPlatform("server");
               }
             }}
           >
@@ -995,7 +997,7 @@ function PlatBuilder() {
             onClick={(e) => {
               e.preventDefault();
               if (!bntStatus.buld) {
-                // buildPlatform();
+                buildPlatform("model");
               }
             }}
           >

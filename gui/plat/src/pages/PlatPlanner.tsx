@@ -14,7 +14,7 @@ import { useAuth } from "@/components/AuthService";
 import Loading from "@/pages/Loading";
 import type { moduleType } from "@/types/Addon";
 import type { ClusterTuple, PlatType } from "@/types/Plat";
-import { emptyPlat } from "@/types/Plat";
+import { emptyPlat, platTypes } from "@/types/Plat";
 import { getAvailableClusters } from "@/utils/activeResource";
 import { storeGuiContext, fetchGuiContext } from "@/utils/currentContext";
 
@@ -483,7 +483,7 @@ function PlatPlanner() {
             </Form.Group>
             <Form.Group className="mb-2 d-flex">
               <Form.Label className="col-sm-3 text-center">
-                Lock Cluster:
+                Lock Plat:
               </Form.Label>
               <Form.Check
                 type="switch"
@@ -494,6 +494,47 @@ function PlatPlanner() {
                   setCurPlat({
                     ...curPlat,
                     is_locked: e.target.checked,
+                  });
+                }}
+              />
+            </Form.Group>
+            <br />
+            <br />
+            <h5>Member Host Resource Defaults:</h5>
+            <br />
+            <Form.Group className="mb-2 d-flex">
+              <Form.Label className=" col-sm-3 text-center">
+                Plat Type:
+              </Form.Label>
+              <Form.Select
+                value={curPlat?.plat_type ?? 0}
+                onChange={(e) => {
+                  setCurPlat({
+                    ...curPlat,
+                    plat_type: Number(e.target.value),
+                  });
+                }}
+              >
+                {platTypes.map(({ key, plat_type_name }) => {
+                  return (
+                    <option key={key} value={key} disabled={key ? false : true}>
+                      {plat_type_name}
+                    </option>
+                  );
+                })}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-2 d-flex">
+              <Form.Label className=" col-sm-3 text-center">
+                Plat URI:
+              </Form.Label>
+              <Form.Control
+                type="input"
+                value={curPlat?.plat_vip ?? ""}
+                onChange={(e) => {
+                  setCurPlat({
+                    ...curPlat,
+                    plat_vip: e.target.value,
                   });
                 }}
               />

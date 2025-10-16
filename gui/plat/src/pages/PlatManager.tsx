@@ -349,21 +349,6 @@ function PlatManager() {
             </Form.Group>
             <Form.Group className="mb-2 d-flex">
               <Form.Label className=" col-sm-3 text-center">
-                Plat vIP:
-              </Form.Label>
-              <Form.Control
-                type="input"
-                value={modalPlat?.plat_vip ?? ""}
-                onChange={(e) => {
-                  setModalPlat({
-                    ...modalPlat,
-                    plat_vip: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
                 Plat Type:
               </Form.Label>
               <Form.Select
@@ -384,6 +369,22 @@ function PlatManager() {
                 })}
               </Form.Select>
             </Form.Group>
+            <Form.Group className="mb-2 d-flex">
+              <Form.Label className=" col-sm-3 text-center">
+                Plat URI:
+              </Form.Label>
+              <Form.Control
+                type="input"
+                value={modalPlat?.plat_vip ?? ""}
+                onChange={(e) => {
+                  setModalPlat({
+                    ...modalPlat,
+                    plat_vip: e.target.value,
+                  });
+                }}
+              />
+            </Form.Group>
+
             <Form.Group className="mb-2 d-flex">
               <Form.Label className="col-sm-3 text-center">Active:</Form.Label>
               <Form.Check

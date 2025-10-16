@@ -1,21 +1,27 @@
 require("module-alias/register");
 const { ssh2Stream } = require("@utils/taskSsh2Stream");
 
-async function pull_Gemma3_270m(cluster, serviceAccount) {
+async function step1Ollma(cluster, serviceAccount) {
   const user = serviceAccount;
   const nodes = cluster.nodes.map((n) => n.ip);
   const spares = cluster.spares ?? [];
 
   if (!nodes.length) return;
 
-  const llm_model_name = cluster.llm_model_name;
   let node = "";
   let cmds = [];
   // let cmd = "";
   // let linkup = "";
   let result = "";
 
-  const cmds_inst = [`ollama pull ${llm_model_name}`];
+  const cmds_inst = [
+    `sudo su`,
+    `iptables -F`,
+    `iptables -P INPUT ACCEPT`,
+    `apt update -y`,
+    `apt install curl -y`,
+    `curl -fsSL https://ollama.com/install.sh | sh`,
+  ];
 
   cmds = cmds_inst
     .map((cmd) => {
@@ -36,4 +42,4 @@ async function pull_Gemma3_270m(cluster, serviceAccount) {
   }
 }
 
-module.exports = { pull_Gemma3_270m };
+module.exports = { step1Ollma };
