@@ -988,7 +988,7 @@ function PlatBuilder() {
               }
             }}
           >
-            Setup the Plat
+            Build this Plat
           </Button>
           <Button
             variant={bntStatus.buld ? "secondary" : "primary"}
@@ -1001,7 +1001,7 @@ function PlatBuilder() {
               }
             }}
           >
-            Load up Models
+            Load the Models
           </Button>
           <Button
             className="float-end"
