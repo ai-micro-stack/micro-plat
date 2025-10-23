@@ -414,16 +414,23 @@ _For more examples, please refer to the [Documentation](https://www.micro-stack.
 
 ## Roadmap
 
-- [x] Add the Gluster as the option to support hyper convergence storage cluster
-- [x] Add the Docker Swarm as the option to support the computing cluster
-- [x] Add thh KeepAlived as the load balancer to support the high availability
-- [x] Add the Portainer as the option for cluster monitor and management tool
-- [x] Add the Ceph as the option tp support hyper convergence storage cluster
-- [ ] Add the Kubernetes as the option to support the computing cluster
-- [ ] Write the user guide document
-- [ ] Multi-language Support
-  - [ ] Chinese
-  - [ ] Spanish
+- [x] Core Computing Platform setup and deployment
+- [x] Add the embedding provider integration
+  - [x] Local cluster node served Ollama service
+  - [x] Computing plat served embedding farm/cluster
+  - [x] Cloud provider presented embedding services
+- [x] Add the vector-db provider inegration
+  - [x] Local cluster node served Chroma & FAISS vector dbs
+  - [x] Computing plat served vector database cluster
+    - [x] Milvus
+    - [ ] Qdrant
+    - [ ] Weaviate
+  - [x] Cloud provider presented vector database services
+- [x] Add llama model provider integration
+  - [x] Computing plat served LLama model farm/cluster
+  - [x] Cloud provider presented LLama model services
+- [ ] Write the user guide documents
+- [ ] Containerized application deployment
 
 See the [open issues](https://github.com/ai-micro-stack/micro-plat/issues) for a full list of proposed features (and known issues).
 
