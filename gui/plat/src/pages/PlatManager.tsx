@@ -193,7 +193,7 @@ function PlatManager() {
               </th>
               <th>
                 <Button variant="link">
-                  <b>Plat_vIP (&#9650;&#9660;)</b>
+                  <b>Plat_URI (&#9650;&#9660;)</b>
                 </Button>
               </th>
               <th>
