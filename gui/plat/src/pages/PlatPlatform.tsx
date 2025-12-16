@@ -51,7 +51,6 @@ function PlatPlatform() {
   const [vectordbModules, setVectordbModules] = useState<moduleType[]>([]);
   const [llmModules, setLlmModules] = useState<moduleType[]>([]);
   const [computeTypes, setComputeTypes] = useState<moduleType[]>([]);
-  const [storageTypes, setStorageTypes] = useState<moduleType[]>([]);
 
   const toggleOpen = (id: string) => {
     if (openStates.includes(id)) {
@@ -79,7 +78,6 @@ function PlatPlatform() {
         .get("/tentbuild/modules")
         .then(({ data }) => {
           setComputeTypes([...data.computeModules]);
-          setStorageTypes([...data.storageModules]);
         })
         .catch((error) =>
           console.error("Get cluster config data failed ", error)
@@ -106,30 +104,20 @@ function PlatPlatform() {
                   (cluster: ClusterTuple): ClusterInfo => {
                     return {
                       ...cluster,
-                      compute_cluster:
-                        computeTypes[cluster.compute_cluster_type ?? 0]
-                          ?.moduleName,
-                      storage_cluster:
-                        storageTypes[cluster.storage_cluster_type ?? 0]
-                          ?.moduleName,
-                      embedding_model_name: embeddingModules[
-                        cluster.compute_cluster_type ?? 0
-                      ]
-                        ? embeddingModules[cluster.compute_cluster_type ?? 0]
-                            .moduleRoles[cluster.embedding_model ?? 0].role
-                        : "",
-                      vectordb_vendor_name: vectordbModules[
-                        cluster.compute_cluster_type ?? 0
-                      ]
-                        ? embeddingModules[cluster.compute_cluster_type ?? 0]
-                            .moduleRoles[cluster.vectordb_vendor ?? 0].role
-                        : "",
-                      llm_model_name: llmModules[
-                        cluster.compute_cluster_type ?? 0
-                      ]
-                        ? embeddingModules[cluster.compute_cluster_type ?? 0]
-                            .moduleRoles[cluster.llm_model ?? 0].role
-                        : "",
+                      compute_cluster: cluster.compute_cluster_type ?? "(None)",
+                      storage_cluster: cluster.storage_cluster_type ?? "(None)",
+                      embedding_model_name: (() => {
+                        const module = embeddingModules.find(m => m.moduleName === cluster.compute_cluster_type);
+                        return module ? module.moduleRoles[cluster.embedding_model ?? 0].role : "";
+                      })(),
+                      vectordb_vendor_name: (() => {
+                        const module = vectordbModules.find(m => m.moduleName === cluster.compute_cluster_type);
+                        return module ? module.moduleRoles[cluster.vectordb_vendor ?? 0].role : "";
+                      })(),
+                      llm_model_name: (() => {
+                        const module = llmModules.find(m => m.moduleName === cluster.compute_cluster_type);
+                        return module ? module.moduleRoles[cluster.llm_model ?? 0].role : "";
+                      })(),
                     };
                   }
                 ).sort((a: ClusterInfo, b: ClusterInfo) => {
@@ -241,6 +229,7 @@ function PlatPlatform() {
                   <td>
                     {plat.Clusters && (
                       <Button
+                        size="sm"
                         style={{ width: "40px" }}
                         onClick={() => toggleOpen(plat.id.toString())}
                         aria-controls={`collapse-${plat.id}`}

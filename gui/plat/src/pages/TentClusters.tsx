@@ -87,13 +87,9 @@ function TentClusters() {
                   balancer_port: tuple.balancer_port,
                   cluster_name: tuple.cluster_name,
                   cluster_nodes: tuple.cluster_nodes,
-                  compute_cluster_type:
-                    clusterAreas.computeModules[tuple.compute_cluster_type ?? 0]
-                      ?.moduleName,
+                  compute_cluster_type: tuple.compute_cluster_type ?? "(None)",
                   compute_nodes: tuple.compute_nodes,
-                  storage_cluster_type:
-                    clusterAreas.storageModules[tuple.storage_cluster_type ?? 0]
-                      ?.moduleName,
+                  storage_cluster_type: tuple.storage_cluster_type ?? "(None)",
                   storage_nodes: tuple.storage_nodes,
                   cluster_status:
                     tuple.cluster_status === true

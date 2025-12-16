@@ -70,8 +70,8 @@ function getActiveClusters(
     Clusters: nicTrees[nicId].Subnets[netId].Clusters.map((c) => {
       return {
         ...c,
-        compute_cluster_type: c.compute_cluster_type ?? 0,
-        storage_cluster_type: c.storage_cluster_type ?? 0,
+        compute_cluster_type: c.compute_cluster_type ?? "(None)",
+        storage_cluster_type: c.storage_cluster_type ?? "(None)",
       };
     }),
     clusterId: activeCluId,
@@ -165,6 +165,9 @@ function getAvailableClusters(
   function InScope(platId: number | null, scanId: number): boolean {
     let result = false;
     switch (useCase) {
+      case "manager":
+        result = scanId === platId || scanId === 0 || platId === null;
+        break;
       case "planner":
         result = scanId === platId || scanId === 0;
         break;

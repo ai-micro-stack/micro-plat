@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Row, Col, Table, Button, Alert, Modal } from "react-bootstrap";
 import { useAuth } from "@/components/AuthService";
@@ -48,14 +48,11 @@ function PlatBuilder() {
   const [embeddingModules, setEmbeddingModules] = useState<moduleType[]>([]);
   const [vectordbModules, setVectordbModules] = useState<moduleType[]>([]);
   const [llmModules, setLlmModules] = useState<moduleType[]>([]);
-  const [balancerTypes, setBalancerTypes] = useState<moduleType[]>([]);
-  const [computeTypes, setComputeTypes] = useState<moduleType[]>([]);
-  const [storageTypes, setStorageTypes] = useState<moduleType[]>([]);
 
-  const supportedServers = [
+  const supportedServers = useMemo(() => [
     { name: "(None)", notfor: [] },
     { name: "Ollama", notfor: ["vectordb"] },
-  ];
+  ], []);
   const [serverOpts, setServerOpts] = useState(supportedServers);
 
   const [spinning, setSpinning] = useState(false);
@@ -85,9 +82,6 @@ function PlatBuilder() {
         .get("/tentbuild/modules")
         .then(({ data }) => {
           setClusterAreas({ ...data });
-          setBalancerTypes([...data.balancerModules]);
-          setComputeTypes([...data.computeModules]);
-          setStorageTypes([...data.storageModules]);
         })
         .catch((error) =>
           console.error("Get cluster config data failed ", error)
@@ -113,15 +107,9 @@ function PlatBuilder() {
                 Clusters: plat.Clusters.map((cluster: ClusterTuple) => {
                   return {
                     ...cluster,
-                    balancer_cluster:
-                      balancerTypes[cluster.balancer_cluster_type ?? 0]
-                        ?.moduleName,
-                    compute_cluster:
-                      computeTypes[cluster.compute_cluster_type ?? 0]
-                        ?.moduleName,
-                    storage_cluster:
-                      storageTypes[cluster.storage_cluster_type ?? 0]
-                        ?.moduleName,
+                    balancer_cluster: cluster.balancer_cluster_type ?? "(None)",
+                    compute_cluster: cluster.compute_cluster_type ?? "(None)",
+                    storage_cluster: cluster.storage_cluster_type ?? "(None)",
                   };
                 }),
               };
@@ -156,7 +144,7 @@ function PlatBuilder() {
       setCurPlat(appPlats[platId ?? 0]);
       setServerOpts(supportedServers);
     }
-  }, [appPlats, platId]);
+  }, [appPlats, platId, supportedServers]);
 
   const handleModalShow = (id: number | null) => {
     const curplatId = id ?? platId;
@@ -262,30 +250,25 @@ function PlatBuilder() {
             Clusters: clusterTuples.map((c) => {
               return {
                 ...c,
-                embedding_module:
-                  embeddingModules[c.compute_cluster_type ?? 0].moduleName,
-                vectordb_module:
-                  vectordbModules[c.compute_cluster_type ?? 0].moduleName,
-                llm_module: llmModules[c.compute_cluster_type ?? 0].moduleName,
+                embedding_module: c.compute_cluster_type,
+                vectordb_module: c.compute_cluster_type,
+                llm_module: c.compute_cluster_type,
                 embedding_model_name:
                   embeddingModules.filter((m) => {
                     return (
-                      m.moduleName ===
-                      computeTypes[c.compute_cluster_type ?? 0]?.moduleName
+                      m.moduleName === c.compute_cluster_type
                     );
                   })[0]?.moduleRoles[c.embedding_model ?? 0].role ?? "(None)",
                 vectordb_vendor_name:
                   vectordbModules.filter((m) => {
                     return (
-                      m.moduleName ===
-                      computeTypes[c.compute_cluster_type ?? 0]?.moduleName
+                      m.moduleName === c.compute_cluster_type
                     );
                   })[0]?.moduleRoles[c.vectordb_vendor ?? 0].role ?? "(None)",
                 llm_model_name:
                   llmModules.filter((m) => {
                     return (
-                      m.moduleName ===
-                      computeTypes[c.compute_cluster_type ?? 0]?.moduleName
+                      m.moduleName === c.compute_cluster_type
                     );
                   })[0]?.moduleRoles[c.llm_model ?? 0].role ?? "(None)",
               };
@@ -346,30 +329,25 @@ function PlatBuilder() {
             Clusters: clusterTuples.map((c) => {
               return {
                 ...c,
-                embedding_module:
-                  embeddingModules[c.compute_cluster_type ?? 0].moduleName,
-                vectordb_module:
-                  vectordbModules[c.compute_cluster_type ?? 0].moduleName,
-                llm_module: llmModules[c.compute_cluster_type ?? 0].moduleName,
+                embedding_module: c.compute_cluster_type,
+                vectordb_module: c.compute_cluster_type,
+                llm_module: c.compute_cluster_type,
                 embedding_model_name:
                   embeddingModules.filter((m) => {
                     return (
-                      m.moduleName ===
-                      computeTypes[c.compute_cluster_type ?? 0]?.moduleName
+                      m.moduleName === c.compute_cluster_type
                     );
                   })[0]?.moduleRoles[c.embedding_model ?? 0].role ?? "(None)",
                 vectordb_vendor_name:
                   vectordbModules.filter((m) => {
                     return (
-                      m.moduleName ===
-                      computeTypes[c.compute_cluster_type ?? 0]?.moduleName
+                      m.moduleName === c.compute_cluster_type
                     );
                   })[0]?.moduleRoles[c.vectordb_vendor ?? 0].role ?? "(None)",
                 llm_model_name:
                   llmModules.filter((m) => {
                     return (
-                      m.moduleName ===
-                      computeTypes[c.compute_cluster_type ?? 0]?.moduleName
+                      m.moduleName === c.compute_cluster_type
                     );
                   })[0]?.moduleRoles[c.llm_model ?? 0].role ?? "(None)",
               };
@@ -843,6 +821,7 @@ function PlatBuilder() {
                   <td>
                     {cluster.plat_member && cluster.embedding_member && (
                       <Form.Select
+                        style={{ fontSize: '14px' }}
                         key={cluster.id + "@storageRole"}
                         id={idx.toString() + "@storageRole"}
                         value={cluster.embedding_model ?? 0}
@@ -858,9 +837,7 @@ function PlatBuilder() {
                         {embeddingModules
                           .filter((m) => {
                             return (
-                              m.moduleName ===
-                              computeTypes[cluster.compute_cluster_type ?? 0]
-                                ?.moduleName
+                              m.moduleName === cluster.compute_cluster_type
                             );
                           })[0]
                           .moduleRoles.map((opt, id) => {
@@ -881,6 +858,7 @@ function PlatBuilder() {
                   <td>
                     {cluster.plat_member && cluster.vectordb_member && (
                       <Form.Select
+                        style={{ fontSize: '14px' }}
                         key={cluster.id + "@storageRole"}
                         id={idx.toString() + "@storageRole"}
                         value={cluster.vectordb_vendor ?? 0}
@@ -893,12 +871,11 @@ function PlatBuilder() {
                           chgBntStatus("dirty");
                         }}
                       >
+
                         {vectordbModules
                           .filter((m) => {
                             return (
-                              m.moduleName ===
-                              computeTypes[cluster.compute_cluster_type ?? 0]
-                                ?.moduleName
+                              m.moduleName === cluster.compute_cluster_type
                             );
                           })[0]
                           .moduleRoles.map((opt, id) => {
@@ -919,6 +896,7 @@ function PlatBuilder() {
                   <td>
                     {cluster.plat_member && cluster.llm_member && (
                       <Form.Select
+                        style={{ fontSize: '14px' }}
                         key={cluster.id + "@storageRole"}
                         id={idx.toString() + "@storageRole"}
                         value={cluster.llm_model ?? 0}
@@ -934,9 +912,7 @@ function PlatBuilder() {
                         {llmModules
                           .filter((m) => {
                             return (
-                              m.moduleName ===
-                              computeTypes[cluster.compute_cluster_type ?? 0]
-                                ?.moduleName
+                              m.moduleName === cluster.compute_cluster_type
                             );
                           })[0]
                           .moduleRoles.map((opt, id) => {

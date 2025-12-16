@@ -8,13 +8,13 @@ import {
   Button,
   ToggleButton,
   Alert,
-  Modal,
 } from "react-bootstrap";
 import { useAuth } from "@/components/AuthService";
+import PlatModal from "@/components/PlatModal";
 import Loading from "@/pages/Loading";
 import type { moduleType } from "@/types/Addon";
 import type { ClusterTuple, PlatType } from "@/types/Plat";
-import { emptyPlat, platTypes } from "@/types/Plat";
+import { emptyPlat } from "@/types/Plat";
 import { getAvailableClusters } from "@/utils/activeResource";
 import { storeGuiContext, fetchGuiContext } from "@/utils/currentContext";
 
@@ -37,6 +37,8 @@ function PlatPlanner() {
 
   const [appPlats, setAppPlats] = useState<PlatType[]>([]);
   const [curPlat, setCurPlat] = useState<PlatType>(emptyPlat);
+  const [modalPlat, setModalPlat] = useState<PlatType>(emptyPlat);
+  const [coreCluster, setCoreCluster] = useState<ClusterTuple | null>(null);
 
   const [clusterTuples, setClusterTuples] = useState<ClusterTuple[]>([]);
 
@@ -79,10 +81,8 @@ function PlatPlanner() {
             Clusters: plat.Clusters.map((cluster: ClusterTuple) => {
               return {
                 ...cluster,
-                compute_cluster:
-                  computeTypes[cluster.compute_cluster_type ?? 0]?.moduleName,
-                storage_cluster:
-                  storageTypes[cluster.storage_cluster_type ?? 0]?.moduleName,
+                compute_cluster: cluster.compute_cluster_type ?? "(None)",
+                storage_cluster: cluster.storage_cluster_type ?? "(None)",
               };
             }),
           };
@@ -122,35 +122,49 @@ function PlatPlanner() {
       );
       setClusterTuples(availableClusters.Clusters);
       setCurPlat(appPlats[platId ?? 0]);
+      if (platId === null) {
+        setCoreCluster(availableClusters.Clusters[0] || null);
+      }
     }
   }, [appPlats, platId]);
 
   const handleModalShow = (id: number | null) => {
-    const curplatId = id ?? platId;
-    const plat: PlatType = curplatId ? appPlats[curplatId] : emptyPlat;
-    setCurPlat(plat);
+    if (id === null) {
+      setModalPlat(emptyPlat);
+      setCoreCluster(null);
+      setPlatId(null);
+    } else {
+      const plat = appPlats.find((p: PlatType) => p.id === id) ?? emptyPlat;
+      setModalPlat(plat);
+      const coreCluster = plat.Clusters?.find((c: ClusterTuple) => c.plat_core_cluster);
+      setCoreCluster(coreCluster || null);
+      const index = appPlats.findIndex((p: PlatType) => p.id === id);
+      setPlatId(index !== -1 ? index : null);
+    }
     setModalAlert(false);
     setValidated(false);
     setShowModal(true);
   };
 
   const handleModalClose = () => {
-    setCurPlat(emptyPlat);
+    setModalPlat(emptyPlat);
+    setCoreCluster(null);
     setModalAlert(false);
     setValidated(false);
     setShowModal(false);
   };
 
   const handleModalSave = () => {
-    const postRoute = curPlat.id ? "update" : "create";
+    const postRoute = modalPlat.id ? "update" : "create";
     axiosInstance
       .post(
         `/platplan/${postRoute}`,
-        { ...curPlat },
+        { ...modalPlat, selectedCoreCluster: coreCluster?.cluster_name || null },
         {
           headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
+            "x-plat-id": modalPlat.id,
           },
         }
       )
@@ -173,12 +187,14 @@ function PlatPlanner() {
   const togglePlatMember = (picked: number) => {
     if (!platId) return;
     if ((picked ?? -1) !== -1) {
-      clusterTuples[picked].plat_member = !clusterTuples[picked].plat_member;
+      if (!clusterTuples[picked].plat_core_cluster) {
+        clusterTuples[picked].plat_member = !clusterTuples[picked].plat_member;
+      }
     } else {
-      const toggledAllAs = clusterTuples[0].plat_member ? false : true;
+      const toggledAllAs = clusterTuples.filter(c => !c.plat_core_cluster)[0]?.plat_member ? false : true;
       setClusterTuples(
         clusterTuples.map((c) => {
-          return { ...c, plat_member: toggledAllAs };
+          return c.plat_core_cluster ? c : { ...c, plat_member: toggledAllAs };
         })
       );
     }
@@ -414,7 +430,7 @@ function PlatPlanner() {
                   variant="outline-primary"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleModalShow(platId);
+                    handleModalShow(platId !== null && platId !== 0 ? appPlats[platId]?.id : null);
                   }}
                 >
                   {platId ? "Edit" : "Create"} Plat Stub
@@ -424,132 +440,19 @@ function PlatPlanner() {
           </Row>
         </Form>
       </div>
-      <Modal
-        size="lg"
-        backdrop="static"
-        keyboard={false}
+      <PlatModal
         show={showModal}
         onHide={handleModalClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>HCI Plat Stub</Modal.Title>
-        </Modal.Header>
-        {modalAlert && (
-          <Alert
-            className="mb-2"
-            variant="danger"
-            onClose={() => setShowAlert(false)}
-            dismissible
-          >
-            {errMsg?.join(" ") ?? "An unknown error."}
-          </Alert>
-        )}
-        <Modal.Body>
-          <Form noValidate validated={validated}>
-            <br />
-            <h5>Plat General Information:</h5>
-            <br />
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat Name:
-              </Form.Label>
-              <Form.Control
-                required
-                type="input"
-                defaultValue={curPlat?.plat_name}
-                onChange={(e) => {
-                  setCurPlat({
-                    ...curPlat,
-                    plat_name: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat Note:
-              </Form.Label>
-              <Form.Control
-                required
-                type="input"
-                defaultValue={curPlat?.plat_note}
-                onChange={(e) => {
-                  setCurPlat({
-                    ...curPlat,
-                    plat_note: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className="col-sm-3 text-center">
-                Lock Plat:
-              </Form.Label>
-              <Form.Check
-                type="switch"
-                id="cluster-lock-switch"
-                // label="Lock this cluster"
-                checked={curPlat?.is_locked}
-                onChange={(e) => {
-                  setCurPlat({
-                    ...curPlat,
-                    is_locked: e.target.checked,
-                  });
-                }}
-              />
-            </Form.Group>
-            <br />
-            <br />
-            <h5>Member Host Resource Defaults:</h5>
-            <br />
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat Type:
-              </Form.Label>
-              <Form.Select
-                value={curPlat?.plat_type ?? 0}
-                onChange={(e) => {
-                  setCurPlat({
-                    ...curPlat,
-                    plat_type: Number(e.target.value),
-                  });
-                }}
-              >
-                {platTypes.map(({ key, plat_type_name }) => {
-                  return (
-                    <option key={key} value={key} disabled={key ? false : true}>
-                      {plat_type_name}
-                    </option>
-                  );
-                })}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat URI:
-              </Form.Label>
-              <Form.Control
-                type="input"
-                value={curPlat?.plat_vip ?? ""}
-                onChange={(e) => {
-                  setCurPlat({
-                    ...curPlat,
-                    plat_vip: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleModalClose}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={handleModalSave}>
-            Save
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        onSave={handleModalSave}
+        plat={modalPlat}
+        setPlat={setModalPlat}
+        coreCluster={coreCluster}
+        setCoreCluster={setCoreCluster}
+        clusterTuples={clusterTuples}
+        modalAlert={modalAlert}
+        errMsg={errMsg}
+        validated={validated}
+      />
       <div className="table" style={bstyle}>
         <Table striped bordered hover>
           <thead className="text-center align-middle">
@@ -631,13 +534,17 @@ function PlatPlanner() {
                       id={idx.toString() + "@plat"}
                       type="checkbox"
                       variant={
-                        cluster.plat_member
+                        cluster.plat_core_cluster
+                          ? "outline-danger"
+                          : cluster.plat_member
                           ? "outline-success"
                           : "outline-primary"
                       }
                       name="checkbox"
                       value={cluster.id || ""}
                       checked={cluster.plat_member}
+                      disabled={cluster.plat_core_cluster}
+                      style={{ padding: '4px 8px', fontSize: '14px' }}
                       onChange={(e) =>
                         togglePlatMember(parseInt(e.currentTarget.id))
                       }
@@ -658,6 +565,7 @@ function PlatPlanner() {
                         name="checkbox"
                         value={cluster.id || ""}
                         checked={cluster.embedding_member}
+                        style={{ padding: '4px 8px', fontSize: '14px' }}
                         onChange={(e) =>
                           toggleEmbeddingMember(parseInt(e.currentTarget.id))
                         }
@@ -678,6 +586,7 @@ function PlatPlanner() {
                         name="checkbox"
                         value={cluster.id || ""}
                         checked={cluster.vectordb_member}
+                        style={{ padding: '4px 8px', fontSize: '14px' }}
                         onChange={(e) =>
                           toggleVectordbMember(parseInt(e.currentTarget.id))
                         }
@@ -698,6 +607,7 @@ function PlatPlanner() {
                         name="checkbox"
                         value={cluster.id || ""}
                         checked={cluster.llm_member}
+                        style={{ padding: '4px 8px', fontSize: '14px' }}
                         onChange={(e) =>
                           toggleLlmodelMember(parseInt(e.currentTarget.id))
                         }

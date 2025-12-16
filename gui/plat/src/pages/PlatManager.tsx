@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Table, Button } from "react-bootstrap";
-import { Modal, Alert } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
 import { useAuth } from "@/components/AuthService";
+import PlatModal from "@/components/PlatModal";
 // import Loading from "@/pages/Loading";
-import type { PlatType } from "@/types/Plat";
+import type { ClusterTuple, PlatType } from "@/types/Plat";
+import type { moduleType } from "@/types/Addon";
 import { defaultPlat, emptyPlat, platTypes } from "@/types/Plat";
 import { formatDate } from "@/utils/formatDate";
+import { getAvailableClusters } from "@/utils/activeResource";
 
 function PlatManager() {
   const bntInitState = {
@@ -28,42 +31,76 @@ function PlatManager() {
   const [modalPlat, setModalPlat] = useState(emptyPlat);
   const [modalAlert, setModalAlert] = useState(false);
   const [validated, setValidated] = useState(false);
+  const [computeTypes, setComputeTypes] = useState<moduleType[]>([]);
+  const [coreCluster, setCoreCluster] = useState<ClusterTuple | null>(null);
+
+  const [platId, setPlatId] = useState<number | null>(0);
+  const [clusterTuples, setClusterTuples] = useState<ClusterTuple[]>([]);
 
   useEffect(
     () => {
-      let platData = [];
       axiosInstance
-        .get("/platplan/data")
+        .get("/tentbuild/modules")
         .then(({ data }) => {
-          // const { /*dhcpDomain,*/ plats } = data;
-          platData = data
-            .filter((plat: PlatType) => {
-              return plat.plat_name !== defaultPlat.plat_name;
-            })
-            .map((plat: PlatType) => {
-              return plat;
-            });
-          setAppPlats(platData);
-          if (platData.length) {
-            setBntStatus({
-              ...bntStatus,
-              prev: false,
-              next: false,
-            });
-          }
+          setComputeTypes([...data.computeModules]);
         })
-        .catch((error) => console.error("Get Cluster Plat failed ", error));
+        .catch((error) =>
+          console.error("Get cluster config data failed ", error)
+        );
     },
     // eslint-disable-next-line
-    [refresh]
+    []
   );
 
+  const getPlatData = () => {
+    let platData = [];
+    axiosInstance
+      .get("/platplan/data")
+      .then(({ data }) => {
+        platData = data.map((plat: PlatType) => {
+          return plat;
+        });
+        setAppPlats(platData);
+        if (platData.length) {
+          setBntStatus({
+            ...bntStatus,
+            prev: false,
+            next: false,
+          });
+        }
+      })
+      .catch((error) => console.error("Get Cluster Plat failed ", error));
+  };
+
+  useEffect(
+    () => {
+      getPlatData();
+    },
+    // eslint-disable-next-line
+    [refresh, computeTypes]
+  );
+
+  useEffect(() => {
+    const availableClusters = getAvailableClusters("planner", appPlats, platId);
+    setClusterTuples(availableClusters.Clusters);
+    if (platId === null && showModal) {
+      setCoreCluster(availableClusters.Clusters[0] || null);
+    }
+  }, [appPlats, platId, showModal]);
+
   const handleModalShow = (id: number | null) => {
-    const plat: PlatType | null =
-      appPlats.find((plat: PlatType) => {
-        return plat.id === id;
-      }) ?? emptyPlat;
-    setModalPlat(plat);
+    if (id === null) {
+      setModalPlat(emptyPlat);
+      setCoreCluster(null);
+      setPlatId(null);
+    } else {
+      const plat = appPlats.find((p: PlatType) => p.id === id) ?? emptyPlat;
+      setModalPlat(plat);
+      const coreCluster = plat.Clusters?.find((c: ClusterTuple) => c.plat_core_cluster);
+      setCoreCluster(coreCluster || null);
+      const index = appPlats.findIndex((p: PlatType) => p.id === id);
+      setPlatId(index !== -1 ? index : null);
+    }
     setModalAlert(false);
     setValidated(false);
     setShowModal(true);
@@ -88,7 +125,7 @@ function PlatManager() {
     axiosInstance
       .post(
         `/platplan/${postRoute}`,
-        { ...modalPlat },
+        { ...modalPlat, selectedCoreCluster: coreCluster?.cluster_name || null },
         {
           headers: {
             "Content-Type": "application/json",
@@ -219,7 +256,11 @@ function PlatManager() {
             </tr>
           </thead>
           <tbody className="text-center">
-            {appPlats.map((plat: PlatType) => {
+            {appPlats
+              .filter((plat: PlatType) => {
+                return plat.plat_name !== defaultPlat.plat_name;
+              })
+              .map((plat: PlatType) => {
               return (
                 <tr key={plat.id}>
                   <td>{plat.plat_name}</td>
@@ -238,7 +279,10 @@ function PlatManager() {
                     <Button
                       className="edit-btn"
                       variant="danger"
-                      size="sm"
+                      style={{
+                        padding: "0.125rem 0.25rem",
+                        fontSize: "0.75rem",
+                      }}
                       onClick={() => handleModalShow(plat.id)}
                     >
                       <b>&#9998; Edit</b>
@@ -246,7 +290,10 @@ function PlatManager() {
                     <Button
                       className="remove-btn"
                       variant="danger"
-                      size="sm"
+                      style={{
+                        padding: "0.125rem 0.25rem",
+                        fontSize: "0.75rem",
+                      }}
                       onClick={() => platDelete(plat.id)}
                     >
                       <b>&#10005; Delete</b>
@@ -300,116 +347,19 @@ function PlatManager() {
         </Form>
       </div>
       {/* {spinning && <Loading />} */}
-      <Modal show={showModal} onHide={handleModalClose}>
-        <Modal.Header closeButton>
-          <Modal.Title>Cluster Member Details</Modal.Title>
-        </Modal.Header>
-        {modalAlert && (
-          <Alert
-            className="mb-2"
-            variant="danger"
-            onClose={() => setShowAlert(false)}
-            dismissible
-          >
-            {errMsg?.join(" ") ?? "An unknown error."}
-          </Alert>
-        )}
-        <Modal.Body>
-          <Form noValidate validated={validated}>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat Name:
-              </Form.Label>
-              <Form.Control
-                required
-                type="input"
-                defaultValue={modalPlat?.plat_name}
-                onChange={(e) => {
-                  setModalPlat({
-                    ...modalPlat,
-                    plat_name: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat Note:
-              </Form.Label>
-              <Form.Control
-                type="input"
-                defaultValue={modalPlat?.plat_note}
-                onChange={(e) => {
-                  setModalPlat({
-                    ...modalPlat,
-                    plat_note: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat Type:
-              </Form.Label>
-              <Form.Select
-                value={modalPlat?.plat_type ?? 0}
-                onChange={(e) => {
-                  setModalPlat({
-                    ...modalPlat,
-                    plat_type: Number(e.target.value),
-                  });
-                }}
-              >
-                {platTypes.map(({ key, plat_type_name }) => {
-                  return (
-                    <option key={key} value={key} disabled={key ? false : true}>
-                      {plat_type_name}
-                    </option>
-                  );
-                })}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className=" col-sm-3 text-center">
-                Plat URI:
-              </Form.Label>
-              <Form.Control
-                type="input"
-                value={modalPlat?.plat_vip ?? ""}
-                onChange={(e) => {
-                  setModalPlat({
-                    ...modalPlat,
-                    plat_vip: e.target.value,
-                  });
-                }}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-2 d-flex">
-              <Form.Label className="col-sm-3 text-center">Active:</Form.Label>
-              <Form.Check
-                inline
-                type="checkbox"
-                defaultChecked={modalPlat?.is_active ?? false}
-                onChange={(e) => {
-                  setModalPlat({
-                    ...modalPlat,
-                    is_active: e.target.checked,
-                  });
-                }}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleModalClose}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={handleModalSave}>
-            Save
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <PlatModal
+        show={showModal}
+        onHide={handleModalClose}
+        onSave={handleModalSave}
+        plat={modalPlat}
+        setPlat={setModalPlat}
+        coreCluster={coreCluster}
+        setCoreCluster={setCoreCluster}
+        clusterTuples={clusterTuples}
+        modalAlert={modalAlert}
+        errMsg={errMsg}
+        validated={validated}
+      />
     </div>
   );
 }

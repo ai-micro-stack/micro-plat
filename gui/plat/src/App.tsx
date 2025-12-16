@@ -20,6 +20,7 @@ const UserLogin = lazy(() => import("@/pages/UserLogin"));
 const Register = lazy(() => import("@/pages/UserRegister"));
 
 import "bootstrap/dist/css/bootstrap.min.css";
+import Loading from "@/pages/Loading";
 import "./App.css";
 
 const style = ({ isActive }: NavLinkRenderProps) => ({
@@ -141,7 +142,7 @@ const App = () => {
         <Col>
           <AuthProvider>
             <Navigation />
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<Loading />}>
               <Routes>
               <Route index element={<HomePage />} />
               <Route

@@ -45,7 +45,7 @@ export type ClusterType = {
   build_auto_lock?: boolean;
 
   // load balancer
-  balancer_cluster_type?: number;
+  balancer_cluster_type?: string;
   balancer_cluster_vip?: string;
   balancer_protocol?: string;
   balancer_port?: string;
@@ -53,12 +53,12 @@ export type ClusterType = {
   peer_pass_secret?: string;
 
   // compute cluster
-  compute_cluster_type?: number;
+  compute_cluster_type?: string;
   compute_cluster_dashboard?: number;
   local_compute_type?: number;
 
   // storage cluster
-  storage_cluster_type?: number;
+  storage_cluster_type?: string;
   storage_cluster_share: string;
   storage_cluster_dashboard?: number;
   local_storage_type: number;
@@ -90,14 +90,14 @@ export const emptyCluster: ClusterType = {
   build_auto_lock: true,
 
   // load balancer
-  balancer_cluster_type: 0,
+  balancer_cluster_type: "(None)",
 
   // compute cluster
-  compute_cluster_type: 0,
+  compute_cluster_type: "(None)",
   local_compute_type: 0,
 
   // storage cluster
-  storage_cluster_type: 0,
+  storage_cluster_type: "(None)",
   storage_cluster_share: "",
   local_storage_type: 0,
   local_storage_default: "",
